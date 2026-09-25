@@ -19,6 +19,10 @@ public class Project {
 
     private String url;
 
+    private Double averageRating = 0.0;
+
+    private Integer upvotes = 0;
+
     @ManyToOne
     @JoinColumn(name = "profile_id", nullable = false)
     private Profile profile;
@@ -64,6 +68,22 @@ public class Project {
 
     public void setUrl(String url) {
         this.url = url;
+    }
+
+    public Double getAverageRating() {
+        return averageRating;
+    }
+
+    public void setAverageRating(Double averageRating) {
+        this.averageRating = averageRating;
+    }
+
+    public Integer getUpvotes() {
+        return upvotes;
+    }
+
+    public void setUpvotes(Integer upvotes) {
+        this.upvotes = upvotes;
     }
 
     public Profile getProfile() {

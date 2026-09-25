@@ -15,9 +15,6 @@ public class FeedbackRequest {
     @Max(value = 5, message = "A nota deve ser no máximo 5")
     private Integer rating;
 
-    @NotNull(message = "O projeto é obrigatório")
-    private Long projectId;
-
     public String getComment() {
         return comment;
     }
@@ -32,13 +29,5 @@ public class FeedbackRequest {
 
     public void setRating(Integer rating) {
         this.rating = rating;
-    }
-
-    public Long getProjectId() {
-        return projectId;
-    }
-
-    public void setProjectId(Long projectId) {
-        this.projectId = projectId;
     }
 }

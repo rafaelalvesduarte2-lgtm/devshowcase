@@ -17,13 +17,15 @@ public class GlobalExceptionHandler {
     public Map<String, String> handleRuntimeException(RuntimeException exception) {
 
         return Map.of(
-                "error", exception.getMessage()
+                "status", "404",
+                "error", "Recurso não encontrado",
+                "message", exception.getMessage()
         );
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public Map<String, String> handleValidationException(
+    public Map<String, Object> handleValidationException(
             MethodArgumentNotValidException exception) {
 
         Map<String, String> errors = new HashMap<>();
@@ -31,9 +33,19 @@ public class GlobalExceptionHandler {
         exception.getBindingResult()
                 .getFieldErrors()
                 .forEach(error ->
-                        errors.put(error.getField(), error.getDefaultMessage())
+                        errors.put(
+                                error.getField(),
+                                error.getDefaultMessage()
+                        )
                 );
 
-        return errors;
+        Map<String, Object> response = new HashMap<>();
+
+        response.put("status", 400);
+        response.put("error", "Erro de validação");
+        response.put("message", "Verifique os campos enviados");
+        response.put("fields", errors);
+
+        return response;
     }
 }

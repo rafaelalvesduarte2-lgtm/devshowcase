@@ -2,17 +2,19 @@ package com.devshowcase.service;
 
 import com.devshowcase.dto.ProjectRequest;
 import com.devshowcase.dto.ProjectResponse;
-import com.devshowcase.entity.Profile;
 import com.devshowcase.entity.Project;
+import com.devshowcase.entity.Profile;
 import com.devshowcase.entity.Technology;
-import com.devshowcase.repository.ProfileRepository;
 import com.devshowcase.repository.ProjectRepository;
+import com.devshowcase.repository.ProfileRepository;
 import com.devshowcase.repository.TechnologyRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 public class ProjectService {
@@ -36,21 +38,23 @@ public class ProjectService {
         Profile profile = profileRepository.findById(request.getProfileId())
                 .orElseThrow(() -> new RuntimeException("Perfil não encontrado"));
 
-        Set<Technology> technologies = new HashSet<>();
-
-        if (request.getTechnologyIds() != null) {
-            technologies = new HashSet<>(
-                    technologyRepository.findAllById(request.getTechnologyIds())
-            );
-        }
-
         Project project = new Project();
 
         project.setTitle(request.getTitle());
         project.setDescription(request.getDescription());
         project.setUrl(request.getUrl());
         project.setProfile(profile);
-        project.setTechnologies(technologies);
+
+        if (request.getTechnologyIds() != null
+                && !request.getTechnologyIds().isEmpty()) {
+
+            Set<Technology> technologies =
+                    technologyRepository.findAllById(request.getTechnologyIds())
+                            .stream()
+                            .collect(Collectors.toSet());
+
+            project.setTechnologies(technologies);
+        }
 
         Project savedProject = projectRepository.save(project);
 
@@ -65,20 +69,67 @@ public class ProjectService {
                 .toList();
     }
 
+    public Page<ProjectResponse> findAll(
+            Long technologyId,
+            int page,
+            int size) {
+
+        PageRequest pageable = PageRequest.of(page, size);
+
+        Page<Project> projects;
+
+        if (technologyId != null) {
+            projects = projectRepository
+                    .findByTechnologies_Id(technologyId, pageable);
+        } else {
+            projects = projectRepository.findAll(pageable);
+        }
+
+        return projects.map(this::toResponse);
+    }
+
+    public ProjectResponse upvote(Long id) {
+
+        Project project = projectRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Projeto não encontrado"));
+
+        if (project.getUpvotes() == null) {
+            project.setUpvotes(1);
+        } else {
+            project.setUpvotes(project.getUpvotes() + 1);
+        }
+
+        Project updatedProject = projectRepository.save(project);
+
+        return toResponse(updatedProject);
+    }
+
     private ProjectResponse toResponse(Project project) {
+
+        Long profileId = null;
+
+        if (project.getProfile() != null) {
+            profileId = project.getProfile().getId();
+        }
 
         Set<Long> technologyIds = project.getTechnologies()
                 .stream()
                 .map(Technology::getId)
-                .collect(java.util.stream.Collectors.toSet());
+                .collect(Collectors.toSet());
 
         return new ProjectResponse(
                 project.getId(),
                 project.getTitle(),
                 project.getDescription(),
                 project.getUrl(),
-                project.getProfile().getId(),
-                technologyIds
+                profileId,
+                technologyIds,
+                project.getAverageRating() == null
+                        ? 0.0
+                        : project.getAverageRating(),
+                project.getUpvotes() == null
+                        ? 0
+                        : project.getUpvotes()
         );
     }
 }
